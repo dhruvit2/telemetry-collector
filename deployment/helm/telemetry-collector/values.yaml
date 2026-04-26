@@ -41,14 +41,14 @@ service:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 512Mi
+    cpu: 200m
+    memory: 200Mi
   requests:
-    cpu: 500m
-    memory: 256Mi
+    cpu: 50m
+    memory: 50Mi
 
 autoscaling:
-  enabled: true
+  enabled: false
   minReplicas: 3
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
