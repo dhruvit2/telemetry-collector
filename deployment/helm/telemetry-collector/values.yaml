@@ -118,7 +118,7 @@ messagebroker:
 
 # TSDB (InfluxDB) Configuration
 tsdb:
-  url: "http://tsdb-influxdb-influxdb-tsdb:8086"
+  url: "http://influxdb-tsdb:8086"
   org: "telemetry"
   bucket: "gpu_metrics_raw"
   retryAttempts: 3
