@@ -1,0 +1,75 @@
+---
+- name: Copy environment configuration
+  template:
+    src: telemetry-collector.env.j2
+    dest: /etc/telemetry-collector/collector.env
+    owner: telemetry
+    group: telemetry
+    mode: '0600'
+  become: yes
+  notify: restart telemetry-collector
+
+- name: Copy systemd service file
+  template:
+    src: telemetry-collector.service.j2
+    dest: /etc/systemd/system/telemetry-collector.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  register: service_file_updated
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes
+  when: service_file_updated.changed
+
+- name: Create collector configuration directory
+  file:
+    path: /etc/telemetry-collector
+    state: directory
+    owner: telemetry
+    group: telemetry
+    mode: '0755'
+  become: yes
+
+- name: Setup log rotation
+  template:
+    src: collector-logrotate.j2
+    dest: /etc/logrotate.d/telemetry-collector
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/telemetry-collector.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: yes
+
+- name: Configure systemd overrides
+  copy:
+    content: |
+      [Service]
+      Restart=on-failure
+      RestartSec=10
+      StandardOutput=journal
+      StandardError=journal
+      SyslogIdentifier=telemetry-collector
+    dest: /etc/systemd/system/telemetry-collector.service.d/override.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+  register: override_updated
+
+- name: Reload systemd daemon for overrides
+  systemd:
+    daemon_reload: yes
+  become: yes
+  when: override_updated.changed

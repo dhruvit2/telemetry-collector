@@ -1,0 +1,18 @@
+apiVersion: v2
+name: telemetry-collector
+description: A highly available and fault-tolerant telemetry collection service for Kubernetes
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - telemetry
+  - collector
+  - monitoring
+  - messagebroker
+maintainers:
+  - name: Platform Team
+    email: platform@example.com
+home: https://github.com/example/telemetry-collector
+sources:
+  - https://github.com/example/telemetry-collector
+dependencies: []

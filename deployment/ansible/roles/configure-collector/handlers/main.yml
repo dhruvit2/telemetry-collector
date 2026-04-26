@@ -1,0 +1,19 @@
+---
+# Handlers for telemetry-collector deployment
+
+- name: restart telemetry-collector
+  systemd:
+    name: telemetry-collector
+    state: restarted
+  become: yes
+
+- name: reload telemetry-collector
+  systemd:
+    name: telemetry-collector
+    state: reloaded
+  become: yes
+
+- name: restart systemd
+  systemd:
+    daemon_reload: yes
+  become: yes

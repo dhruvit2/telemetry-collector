@@ -1,0 +1,154 @@
+# Default values for telemetry-collector
+replicaCount: 3
+
+image:
+  repository: docker.io/telemetry-collector
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - telemetry-collector
+          topologyKey: kubernetes.io/hostname
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+# Configuration
+config:
+  # Service identity
+  serviceId: "collector"
+  logLevel: "info"
+
+  # Collection behavior
+  readFrequencyMs: 1000
+  batchSize: 50
+  batchTimeoutMs: 5000
+  maxPollRecords: 100
+
+  # Resilience
+  maxRetries: 5
+  retryBackoffMs: 100
+  circuitBreakerThreshold: 10
+
+  # Operational
+  healthCheckInterval: 30
+  gracefulShutdownTimeout: 30
+
+# Message Broker configuration
+messagebroker:
+  addresses: "messagebroker-0.messagebroker:9092,messagebroker-1.messagebroker:9092,messagebroker-2.messagebroker:9092"
+  topic: "telemetry-events"
+
+# Persistence (optional)
+persistence:
+  enabled: false
+  storageClassName: "standard"
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /data
+
+# Environment variables for collection sources
+env: {}
+  # CUSTOM_SOURCE_ENABLED: "true"
+  # CUSTOM_SOURCE_URL: "http://api.example.com"
+
+# Additional environment variables from ConfigMap/Secrets
+envFrom: []
+
+# Volume mounts
+volumeMounts: []
+
+# Volumes
+volumes: []
+
+# Init containers
+initContainers: []
+
+# Priority class
+priorityClassName: ""
+
+# Restart policy
+restartPolicy: Always
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0

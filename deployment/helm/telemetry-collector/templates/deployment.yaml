@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "telemetry-collector.fullname" . }}
+  labels:
+    {{- include "telemetry-collector.labels" . | nindent 4 }}
+spec:
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "telemetry-collector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "telemetry-collector.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "telemetry-collector.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        env:
+        - name: SERVICE_NAME
+          value: {{ include "telemetry-collector.fullname" . | quote }}
+        - name: SERVICE_ID
+          value: {{ .Values.config.serviceId | quote }}
+        - name: HEALTH_PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          value: {{ .Values.config.logLevel | quote }}
+        - name: READ_FREQUENCY_MS
+          value: {{ .Values.config.readFrequencyMs | quote }}
+        - name: BATCH_SIZE
+          value: {{ .Values.config.batchSize | quote }}
+        - name: BATCH_TIMEOUT_MS
+          value: {{ .Values.config.batchTimeoutMs | quote }}
+        - name: MAX_POLL_RECORDS
+          value: {{ .Values.config.maxPollRecords | quote }}
+        - name: MAX_RETRIES
+          value: {{ .Values.config.maxRetries | quote }}
+        - name: RETRY_BACKOFF_MS
+          value: {{ .Values.config.retryBackoffMs | quote }}
+        - name: CIRCUIT_BREAKER_THRESHOLD
+          value: {{ .Values.config.circuitBreakerThreshold | quote }}
+        - name: HEALTH_CHECK_INTERVAL
+          value: {{ .Values.config.healthCheckInterval | quote }}
+        - name: GRACEFUL_SHUTDOWN_TIMEOUT
+          value: {{ .Values.config.gracefulShutdownTimeout | quote }}
+        - name: BROKER_ADDRESSES
+          value: {{ .Values.messagebroker.addresses | quote }}
+        - name: TOPIC
+          value: {{ .Values.messagebroker.topic | quote }}
+        {{- with .Values.env }}
+        {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.envFrom }}
+        envFrom:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.volumeMounts }}
+        volumeMounts:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      restartPolicy: {{ .Values.restartPolicy }}
+      terminationGracePeriodSeconds: {{ .Values.config.gracefulShutdownTimeout | int | add 5 }}

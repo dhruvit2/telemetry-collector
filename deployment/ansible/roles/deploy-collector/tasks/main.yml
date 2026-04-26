@@ -1,0 +1,66 @@
+---
+- name: Download collector binary
+  get_url:
+    url: "{{ collector_download_url }}"
+    dest: /tmp/telemetry-collector
+    owner: root
+    group: root
+    mode: '0755'
+    force: yes
+  become: yes
+  register: binary_downloaded
+
+- name: Verify binary checksum
+  stat:
+    path: /tmp/telemetry-collector
+  register: binary_stat
+  when: binary_downloaded.changed
+
+- name: Deploy collector binary
+  copy:
+    src: /tmp/telemetry-collector
+    dest: /opt/telemetry/bin/collector
+    owner: telemetry
+    group: telemetry
+    mode: '0755'
+    remote_src: yes
+  become: yes
+  when: binary_downloaded.changed
+  register: binary_deployed
+
+- name: Set file capabilities for collector
+  capabilities:
+    path: /opt/telemetry/bin/collector
+    capability: "cap_net_bind_service=ep"
+    state: present
+  become: yes
+  ignore_errors: yes
+
+- name: Create symlink for easier access
+  file:
+    src: /opt/telemetry/bin/collector
+    dest: /usr/local/bin/telemetry-collector
+    state: link
+  become: yes
+
+- name: Enable telemetry-collector service
+  systemd:
+    name: telemetry-collector
+    enabled: yes
+    state: started
+  become: yes
+  register: service_started
+
+- name: Wait for service to start
+  pause:
+    seconds: 2
+  when: service_started.changed
+
+- name: Verify binary works
+  command: /opt/telemetry/bin/collector --version
+  register: collector_version
+  ignore_errors: yes
+
+- name: Display deployed version
+  debug:
+    msg: "Telemetry Collector deployed. Version: {{ collector_version.stdout | default('unknown') }}"

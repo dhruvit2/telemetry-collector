@@ -1,0 +1,38 @@
+[Unit]
+Description=Telemetry Collector Service
+Documentation=https://example.com/docs/telemetry-collector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=telemetry
+Group=telemetry
+WorkingDirectory=/opt/telemetry
+ExecStart=/opt/telemetry/bin/collector
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=600
+StartLimitBurst=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=telemetry-collector
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/opt/telemetry /var/log
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=65535
+
+# Environment
+EnvironmentFile=/etc/telemetry-collector/collector.env
+
+[Install]
+WantedBy=multi-user.target

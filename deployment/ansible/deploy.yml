@@ -1,0 +1,141 @@
+---
+# Telemetry Collector Deployment Playbook
+# Deploy and manage telemetry-collector service on target hosts
+
+- name: Deploy Telemetry Collector Service
+  hosts: all
+  become: no
+  gather_facts: yes
+  vars:
+    # Deployment configuration
+    service_id: "collector"
+    health_port: 8080
+    log_level: "info"
+    
+    # Collection configuration
+    read_frequency_ms: 1000
+    batch_size: 50
+    batch_timeout_ms: 5000
+    max_poll_records: 100
+    
+    # Resilience configuration
+    max_retries: 5
+    retry_backoff_ms: 100
+    circuit_breaker_threshold: 10
+    
+    # Operational configuration
+    health_check_interval: 30
+    graceful_shutdown_timeout: 30
+    
+    # Message broker configuration
+    broker_addresses: "localhost:9092"
+    topic: "telemetry-events"
+    
+    # Download configuration
+    collector_download_url: "https://releases.example.com/telemetry-collector/v1.0.0/collector"
+  
+  pre_tasks:
+    - name: Validate inventory
+      assert:
+        that:
+          - inventory_hostname is defined
+        fail_msg: "Invalid inventory configuration"
+    
+    - name: Display deployment information
+      debug:
+        msg:
+          - "Deploying telemetry-collector to {{ inventory_hostname }}"
+          - "Service ID: {{ service_id }}"
+          - "Health Port: {{ health_port }}"
+          - "Log Level: {{ log_level }}"
+          - "Broker Addresses: {{ broker_addresses }}"
+          - "Topic: {{ topic }}"
+
+  roles:
+    - role: install-dependencies
+      tags:
+        - dependencies
+        - install
+      when: install_dependencies | default(true)
+    
+    - role: configure-collector
+      tags:
+        - configure
+      vars:
+        service_id: "{{ service_id }}"
+        health_port: "{{ health_port }}"
+        log_level: "{{ log_level }}"
+        read_frequency_ms: "{{ read_frequency_ms }}"
+        batch_size: "{{ batch_size }}"
+        batch_timeout_ms: "{{ batch_timeout_ms }}"
+        max_poll_records: "{{ max_poll_records }}"
+        max_retries: "{{ max_retries }}"
+        retry_backoff_ms: "{{ retry_backoff_ms }}"
+        circuit_breaker_threshold: "{{ circuit_breaker_threshold }}"
+        health_check_interval: "{{ health_check_interval }}"
+        graceful_shutdown_timeout: "{{ graceful_shutdown_timeout }}"
+        broker_addresses: "{{ broker_addresses }}"
+        topic: "{{ topic }}"
+    
+    - role: deploy-collector
+      tags:
+        - deploy
+      vars:
+        collector_download_url: "{{ collector_download_url }}"
+    
+    - role: health-check
+      tags:
+        - health-check
+        - verify
+      vars:
+        health_port: "{{ health_port }}"
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "✓ Telemetry Collector deployed successfully"
+          - "✓ Service: telemetry-collector"
+          - "✓ Health endpoint: http://{{ inventory_hostname }}:{{ health_port }}/health"
+          - "✓ Metrics endpoint: http://{{ inventory_hostname }}:{{ health_port }}/metrics"
+          - "✓ Configuration: /etc/telemetry-collector/collector.env"
+    
+    - name: Save deployment manifest
+      copy:
+        content: |
+          Deployment Manifest - {{ ansible_date_time.iso8601 }}
+          ===============================================
+          
+          Host: {{ inventory_hostname }}
+          OS: {{ ansible_os_family }} {{ ansible_distribution_version }}
+          
+          Service Configuration:
+          - Service ID: {{ service_id }}
+          - Health Port: {{ health_port }}
+          - Log Level: {{ log_level }}
+          
+          Collection Configuration:
+          - Read Frequency: {{ read_frequency_ms }}ms
+          - Batch Size: {{ batch_size }}
+          - Batch Timeout: {{ batch_timeout_ms }}ms
+          - Max Poll Records: {{ max_poll_records }}
+          
+          Resilience Configuration:
+          - Max Retries: {{ max_retries }}
+          - Retry Backoff: {{ retry_backoff_ms }}ms
+          - Circuit Breaker Threshold: {{ circuit_breaker_threshold }}
+          
+          Message Broker:
+          - Addresses: {{ broker_addresses }}
+          - Topic: {{ topic }}
+          
+          Service Status:
+          - Binary: /opt/telemetry/bin/collector
+          - Configuration: /etc/telemetry-collector/collector.env
+          - Systemd Unit: /etc/systemd/system/telemetry-collector.service
+          - Logs: journalctl -u telemetry-collector -f
+        dest: "/tmp/telemetry-collector-deployment-{{ ansible_date_time.iso8601_basic_short }}.txt"
+      when: save_manifest | default(true)
+
+  handlers:
+    - import_tasks: deployment/ansible/roles/configure-collector/handlers/main.yml
