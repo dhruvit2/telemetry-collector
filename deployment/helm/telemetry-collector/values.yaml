@@ -1,10 +1,10 @@
 # Default values for telemetry-collector
-replicaCount: 3
+replicaCount: 1
 
 image:
-  repository: docker.io/telemetry-collector
+  repository: dhruvit2/telemetry-collector
   pullPolicy: IfNotPresent
-  tag: "latest"
+  tag: "1.0.0"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -118,7 +118,7 @@ messagebroker:
 
 # TSDB (InfluxDB) Configuration
 tsdb:
-  url: "http://influxdb:8086"
+  url: "http://tsdb-influxdb-influxdb-tsdb:8086"
   org: "telemetry"
   bucket: "gpu_metrics_raw"
   retryAttempts: 3
@@ -133,7 +133,7 @@ secrets:
 # Persistence (optional)
 persistence:
   enabled: false
-  storageClassName: "standard"
+  storageClassName: "local-path"
   accessMode: ReadWriteOnce
   size: 1Gi
   mountPath: /data
