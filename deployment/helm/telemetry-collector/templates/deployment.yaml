@@ -81,7 +81,23 @@ spec:
           value: {{ .Values.messagebroker.addresses | quote }}
         - name: TOPIC
           value: {{ .Values.messagebroker.topic | quote }}
-        {{- with .Values.env }}
+        - name: TSDB_URL
+          value: {{ .Values.tsdb.url | quote }}
+        - name: TSDB_ORG
+          value: {{ .Values.tsdb.org | quote }}
+        - name: TSDB_BUCKET
+          value: {{ .Values.tsdb.bucket | quote }}
+        - name: TSDB_RETRY_ATTEMPTS
+          value: {{ .Values.tsdb.retryAttempts | quote }}
+        - name: TSDB_QUERY_TIMEOUT
+          value: {{ .Values.tsdb.queryTimeout | quote }}
+        {{- if .Values.secrets.tsdbToken }}
+        - name: TSDB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "telemetry-collector.fullname" . }}-secret
+              key: tsdb-token
+        {{- end }}
         {{- toYaml . | nindent 12 }}
         {{- end }}
         {{- with .Values.envFrom }}

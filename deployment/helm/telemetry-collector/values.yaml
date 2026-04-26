@@ -114,6 +114,21 @@ config:
 messagebroker:
   addresses: "messagebroker-0.messagebroker:9092,messagebroker-1.messagebroker:9092,messagebroker-2.messagebroker:9092"
   topic: "telemetry-events"
+  consumerGroup: "telemetry-collectors"
+
+# TSDB (InfluxDB) Configuration
+tsdb:
+  url: "http://influxdb:8086"
+  org: "telemetry"
+  bucket: "gpu_metrics_raw"
+  retryAttempts: 3
+  queryTimeout: "30s"
+
+# Secrets for TSDB
+secrets:
+  # InfluxDB token - REQUIRED
+  # Generate or get from: kubectl create secret generic telemetry-collector-secret --from-literal=tsdb-token=<token>
+  tsdbToken: 7h2UjNBHN7ApaRrwz49uyRi6sySH-NaICaNLz4ZP5ROt2Jf8lDfJqtyU_e-45STGcnvD71x5sa9dRlgb9H2kKg==
 
 # Persistence (optional)
 persistence:
