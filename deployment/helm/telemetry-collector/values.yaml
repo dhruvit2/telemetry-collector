@@ -112,8 +112,8 @@ config:
 
 # Message Broker configuration
 messagebroker:
-  addresses: "messagebroker-0.messagebroker:9092,messagebroker-1.messagebroker:9092,messagebroker-2.messagebroker:9092"
-  topic: "telemetry-events"
+  addresses: "messagebroker:9092"
+  topic: "telemetry-data"
   consumerGroup: "telemetry-collectors"
 
 # TSDB (InfluxDB) Configuration
@@ -128,12 +128,12 @@ tsdb:
 secrets:
   # InfluxDB token - REQUIRED
   # Generate or get from: kubectl create secret generic telemetry-collector-secret --from-literal=tsdb-token=<token>
-  tsdbToken: 7h2UjNBHN7ApaRrwz49uyRi6sySH-NaICaNLz4ZP5ROt2Jf8lDfJqtyU_e-45STGcnvD71x5sa9dRlgb9H2kKg==
+  tsdbToken: qJVu2ArhT1nxIcxa12tkCUORK3sfbCo-mfdacngi8OALe-F_Le29Ufb5iVQBFOa5uZrU6kCjDXCa8S5w_lzquQ==
 
 # Persistence (optional)
 persistence:
   enabled: false
-  storageClassName: "local-path"
+  storageClassName: "longhorn-custom"
   accessMode: ReadWriteOnce
   size: 1Gi
   mountPath: /data
